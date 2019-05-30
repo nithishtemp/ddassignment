@@ -1,7 +1,6 @@
 package com.dd.service;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -67,31 +66,25 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 		return null;
 	}
 
-	public List<ActivityDto> organizeActivity(MultipartFile multipartFile) throws Exception {
+	public String organizeActivity(MultipartFile multipartFile) throws Exception {
 		File file = null;
+		StringBuilder builder = new StringBuilder();
 		try {
 			file = convertMultiPartToFile(multipartFile);
 			List<ActivityDto> activities = this.convertFileToObject(file);
 			long totalMinutes = this.calculateTotalMinutes(activities);
 			Map<Integer, List<ActivityDto>> result = this.segregateActivitiesIntoTeams(activities, totalMinutes);
+			
+			for(Map.Entry<Integer, List<ActivityDto>> entry : result.entrySet()) {
+				builder.append("Team: " + entry.getKey()).append("\n");
+				for(ActivityDto dt : entry.getValue()) {
+					builder.append(dt.getTime() + dt.getEvent()+dt.getRange()).append("\n");
+				}
+			}
 		} catch (Exception ex) {
 			throw ex;
 		}
-		return null;
-	}
-	
-	public static void main(String args[]) throws Exception {
-		ActivitiesOrganizeService serv = new ActivitiesOrganizeService();
-		File file = new File("C:\\zendesk\\assignment.txt");
-		List<ActivityDto> activities = serv.convertFileToObject(file);
-		long totalMinutes = serv.calculateTotalMinutes(activities);
-		Map<Integer, List<ActivityDto>> result = serv.segregateActivitiesIntoTeams(activities, totalMinutes);
-		for(Map.Entry<Integer, List<ActivityDto>> entry : result.entrySet()) {
-			System.out.println("Team: " + entry.getKey());
-			for(ActivityDto dt : entry.getValue()) {
-				System.out.println(dt.getTime() + dt.getEvent()+dt.getRange());
-			}
-		}
+		return builder.toString();
 	}
 	
 	private Map<Integer, List<ActivityDto>> segregateActivitiesIntoTeams(List<ActivityDto> activities, long totalMinutes) throws Exception{

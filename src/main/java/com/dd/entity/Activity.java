@@ -23,7 +23,9 @@ public class Activity implements java.io.Serializable{
 	private Long activityId;
 	private String event;
 	private String time;
-	private String range;
+	
+	//Mysql could not use field name as range, so changed this to period
+	private String period;
 	
 	@ManyToOne(targetEntity = Team.class, fetch = FetchType.LAZY)
 	@JoinColumn(name="teamId",referencedColumnName="teamId", insertable = true, updatable = true)
@@ -47,16 +49,16 @@ public class Activity implements java.io.Serializable{
 	public void setTime(String time) {
 		this.time = time;
 	}
-	public String getRange() {
-		return range;
-	}
-	public void setRange(String range) {
-		this.range = range;
-	}
 	public Team getTeam() {
 		return team;
 	}
 	public void setTeam(Team team) {
 		this.team = team;
+	}
+	public String getPeriod() {
+		return period;
+	}
+	public void setPeriod(String period) {
+		this.period = period;
 	}
 }
