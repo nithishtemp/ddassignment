@@ -52,7 +52,7 @@ public class TimeDto implements IDto{
 	}
 	
 	private void updateMinute() {
-		if(this.minute > 60) {
+		if(this.minute >= 60) {
 			this.minute = this.minute%60;
 			this.hour = this.hour + 1;
 			updateMinute();

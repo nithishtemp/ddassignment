@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.dd.dto.ActivityDto;
+import com.dd.dto.TimeDto;
 import com.dd.entity.Activity;
 import com.dd.repository.ActivityRepository;
 
@@ -70,20 +71,35 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 		File file = null;
 		try {
 			file = convertMultiPartToFile(multipartFile);
-			List<ActivityDto> activities = convertFileToObject(file);
-			long totalMinutes = calculateTotalMinutes(activities);
+			List<ActivityDto> activities = this.convertFileToObject(file);
+			long totalMinutes = this.calculateTotalMinutes(activities);
+			Map<Integer, List<ActivityDto>> result = this.segregateActivitiesIntoTeams(activities, totalMinutes);
 		} catch (Exception ex) {
 			throw ex;
 		}
 		return null;
 	}
 	
+	public static void main(String args[]) throws Exception {
+		ActivitiesOrganizeService serv = new ActivitiesOrganizeService();
+		File file = new File("C:\\zendesk\\assignment.txt");
+		List<ActivityDto> activities = serv.convertFileToObject(file);
+		long totalMinutes = serv.calculateTotalMinutes(activities);
+		Map<Integer, List<ActivityDto>> result = serv.segregateActivitiesIntoTeams(activities, totalMinutes);
+		for(Map.Entry<Integer, List<ActivityDto>> entry : result.entrySet()) {
+			System.out.println("Team: " + entry.getKey());
+			for(ActivityDto dt : entry.getValue()) {
+				System.out.println(dt.getTime() + dt.getEvent()+dt.getRange());
+			}
+		}
+	}
+	
 	private Map<Integer, List<ActivityDto>> segregateActivitiesIntoTeams(List<ActivityDto> activities, long totalMinutes) throws Exception{
 		Map<Integer, List<ActivityDto>> teamActivityMap = new HashMap<>();
 		int type1Minutes = 360;
 		int type2Minutes = 420;
-		double type1 = totalMinutes/type1Minutes;
-		double type2 = totalMinutes/type2Minutes;
+		double type1 = (double)totalMinutes/type1Minutes;
+		double type2 = (double)totalMinutes/type2Minutes;
 		type1 = type1 - Math.floor(type1);
 		type2 = type2 - Math.floor(type2);		
 		String type = null;
@@ -111,19 +127,80 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 				typeMinutes = type2Minutes;
 			}
 		}
+		int keyCounter = 1;
 		while(totalMinutes > 0 ) {
 			int minutesForSegregation = typeMinutes;
-			boolean morningEventsFlag = false;
-			ListIterator<ActivityDto> iter = activities.listIterator();
-			while(iter.hasNext()){
-			    
-				
-				
+			int morningMinutes = 180;			
+			TimeDto time = null;
+			List<ActivityDto> result = new ArrayList<>();
+			ListIterator<ActivityDto> iter = activities.listIterator();			
+			while(iter.hasNext() && minutesForSegregation > 0){
+				ActivityDto dto = iter.next();
+			    if(morningMinutes > 0) {
+			    	int temp = morningMinutes - dto.getMinute();
+			    	if(temp > 0)
+			    	{
+			    		morningMinutes = temp;
+			    		minutesForSegregation = minutesForSegregation - dto.getMinute();
+			    		time = time == null? new TimeDto(9, 0, "AM") : time;
+			    		dto.setTime(time);
+			    		result.add(dto);
+			    		time.addMinutes(dto.getMinute());
+			    		iter.remove();
+			    	}
+			    	else if(temp >= -30 && temp <= 0) {
+			    		morningMinutes = 0;
+			    		minutesForSegregation = minutesForSegregation - dto.getMinute();
+			    		time = time == null? new TimeDto(9, 0, "AM") : time;
+			    		dto.setTime(time);
+			    		result.add(dto);
+			    		time.addMinutes(dto.getMinute());
+			    		iter.remove();
+			    		ActivityDto lunchActivity = new ActivityDto();
+			    		lunchActivity.setTime(time);
+			    		lunchActivity.setEvent("Lunch Break");
+			    		lunchActivity.setRange("60min");
+			    		result.add(lunchActivity);
+			    		time.addMinutes(60);
+			    	}
+			    	else {
+			    		iter.remove();
+			    		iter.add(dto);
+			    	}
+			    	
+			    }else {
+			    	int temp = minutesForSegregation - dto.getMinute();
+			    	temp = type.equalsIgnoreCase("type2")?(temp - 60) : temp;
+			    	if(temp > 0) {
+			    		minutesForSegregation = minutesForSegregation - dto.getMinute();
+			    		dto.setTime(time);
+			    		result.add(dto);
+			    		time.addMinutes(dto.getMinute());
+			    		iter.remove();
+			    	}else if(temp >= -60 && temp <= 0){
+			    		minutesForSegregation = 0;
+			    		totalMinutes = totalMinutes - typeMinutes + temp;
+			    		dto.setTime(time);
+			    		result.add(dto);
+			    		time.addMinutes(dto.getMinute());
+			    		iter.remove();
+			    	}else {
+			    		iter.remove();
+			    		iter.add(dto);
+			    	}
+			    }
 			}
+			ActivityDto finalSession = new ActivityDto();
+			finalSession.setEvent("Staff Motivation Presentation");
+			finalSession.setTime(time);
+			result.add(finalSession);	
+			teamActivityMap.put(keyCounter++, result);
 		}
+		return teamActivityMap;
 	}
 	
-	private boolean validateActivitiesList() {
+	
+	private void validateActivitiesList() {
 		//todo
 	}
 	
@@ -135,7 +212,7 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 		return totalMinutes;
 	}	
 	
-	private List<ActivityDto> convertFileToObject(File file) throws FileNotFoundException{
+	private List<ActivityDto> convertFileToObject(File file) throws Exception{
 		List<ActivityDto> activities = new ArrayList<>();
 		Scanner scanner = new Scanner(file);
 		while (scanner.hasNextLine()) {
@@ -148,18 +225,23 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 		return activities;
 	}
 
-	private ActivityDto generateActivity(String line) {
+	private ActivityDto generateActivity(String line) throws Exception {
 		int minute = 0;
 		int index = 0;
 		Matcher m = Pattern.compile("\\d+").matcher(line);		
 		ActivityDto dto = new ActivityDto();
-		if (m.find()) {
+		if (m.find()) {			
 			minute = Integer.valueOf(m.group());
+			while(m.find()) {
+				minute = Integer.valueOf(m.group());
+			}
 			dto.setMinute(minute);
 			index = line.indexOf(minute + "");
 		} else {
-			dto.setMinute(minute);
+			dto.setMinute(15);
 			index = line.toLowerCase().indexOf("sprint");
+			if(index == 0)
+				throw new Exception ("Following Line is invalid \n "+ line +" - Follow pattern: <Activity name>  <Minutes/sprint> ");
 		}
 		dto.setEvent(line.substring(0, index));
 		dto.setRange(line.substring(index, line.length()));
