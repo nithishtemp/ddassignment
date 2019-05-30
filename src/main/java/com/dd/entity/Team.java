@@ -16,7 +16,7 @@ public class Team implements java.io.Serializable{
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	@Column(name = "id", unique = true, nullable = false)
+	@Column(name = "teamId", unique = true, nullable = false)
 	private Long teamId;
 	
 	private String teamName;
@@ -36,5 +36,7 @@ public class Team implements java.io.Serializable{
 	public void setTeamName(String teamName) {
 		this.teamName = teamName;
 	}	
+	
+	
 
 }
