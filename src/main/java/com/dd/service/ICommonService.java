@@ -20,24 +20,24 @@ public interface ICommonService <T extends IDto, S extends Serializable>{
 	 * @param dto
 	 * @return
 	 */
-	T create(T dto, String username);	
+	T create(T dto);	
 	
 	/**
 	 * @param dtoList
 	 * @return
 	 */
-	List<T> create(List<T> dtoList, String username);	
+	List<T> create(List<T> dtoList);	
 	
 	/**
 	 * @param dto
 	 * @return
 	 */
-	T update(T dto, String username);
+	T update(T dto);
 	
 	/**
 	 * @param dto
 	 */
-	void delete(T dto);
+	void delete(Long id);
 	
 	/**
 	 * @param id

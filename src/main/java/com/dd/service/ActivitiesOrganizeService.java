@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Resource;
 
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,47 +22,39 @@ import com.dd.dto.ActivityDto;
 import com.dd.dto.TimeDto;
 import com.dd.entity.Activity;
 import com.dd.repository.ActivityRepository;
-
-import javassist.NotFoundException;
+import com.dd.util.Constants;
 
 @Component
-public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Activity> {
+public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto, Activity> {
 
 	@Resource
 	private ActivityRepository repository;
-
+	
 	@Override
-	public ActivityDto create(ActivityDto dto, String username) {
+	public JpaRepository<Activity, Long> getJPARepository() {
+		return repository;
+	}
+	
+	@Override
+	public Activity convertDtoToEntity(ActivityDto dto) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public List<ActivityDto> create(List<ActivityDto> dtoList, String username) {
+	public List<Activity> convertDtosToEntities(List<ActivityDto> dtoList) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public ActivityDto update(ActivityDto dto, String username) {
+	public ActivityDto convertEntityToDto(Activity entity) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public void delete(ActivityDto dto) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public ActivityDto read(Long id) throws NotFoundException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public List<ActivityDto> readAll() throws NotFoundException {
+	public List<ActivityDto> convertEntitiesToDtos(List<Activity> entities) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -76,9 +69,9 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			Map<Integer, List<ActivityDto>> result = this.segregateActivitiesIntoTeams(activities, totalMinutes);
 			
 			for(Map.Entry<Integer, List<ActivityDto>> entry : result.entrySet()) {
-				builder.append("Team: " + entry.getKey()).append("\n");
+				builder.append("Team: " + entry.getKey()).append(Constants.NEWLINE);
 				for(ActivityDto dt : entry.getValue()) {
-					builder.append(dt.getTime() + dt.getEvent()+dt.getRange()).append("\n");
+					builder.append(dt.getTime() + dt.getEvent()+dt.getRange()).append(Constants.NEWLINE);
 				}
 			}
 		} catch (Exception ex) {
@@ -99,36 +92,35 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 		int typeMinutes = 0;
 		if(type1 == 0.0)
 		{
-			type = "type1";
+			type = Constants.TYPE1;
 			typeMinutes = type1Minutes;
 		}else if(type2 == 0.0) {
-			type = "type2";
+			type = Constants.TYPE2;
 			typeMinutes = type2Minutes;
 		}
 		else if(type1 > type2)
 		{
 			if(type1 < 0.9) {
 				StringBuilder builder = new StringBuilder();
-				builder.append("Either remove activities with "+ (int)(type1 * type1Minutes) + "Minutes").append("\n OR ");
-				builder.append("Add activities with "+((int)((1-type1) * type1Minutes)) + "Minutes");				
+				builder.append("Either remove activities with "+ (int)(type1 * type1Minutes) + Constants.MINUTES).append("\n OR ");
+				builder.append("Add activities with "+((int)((1-type1) * type1Minutes)) + Constants.MINUTES);				
 				throw new Exception(builder.toString());				
 			}else
 			{
-				type = "type1";
+				type = Constants.TYPE1;
 				typeMinutes = type1Minutes;
 			}
 		}else {
 			if(type2 < 0.8) {
 				StringBuilder builder = new StringBuilder();
-				builder.append("Either remove activities with "+ (int)(type2 * type1Minutes) + "Minutes").append("\n OR ");
-				builder.append("Add activities with "+((int)((1-type2) * type1Minutes)) + "Minutes");				
+				builder.append("Either remove activities with "+ (int)(type2 * type1Minutes) + Constants.MINUTES).append("\n OR ");
+				builder.append("Add activities with "+((int)((1-type2) * type1Minutes)) + Constants.MINUTES);				
 				throw new Exception(builder.toString());
 			}else {
-				type = "type2";
+				type = Constants.TYPE2;
 				typeMinutes = type2Minutes;
 			}
 		}
-		System.out.println(type);
 		int keyCounter = 1;
 		while(totalMinutes > 0 && activities.size()>0) {
 			int minutesForSegregation = typeMinutes;
@@ -144,7 +136,7 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			    	{
 			    		morningMinutes = temp;
 			    		minutesForSegregation = minutesForSegregation - dto.getMinute();
-			    		time = time == null? new TimeDto(9, 0, "AM") : time;
+			    		time = time == null? new TimeDto(9, 0, Constants.AM) : time;
 			    		dto.setTime(time.clone());
 			    		result.add(dto);
 			    		time.addMinutes(dto.getMinute());
@@ -153,15 +145,15 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			    	else if(temp >= -30 && temp <= 0) {
 			    		morningMinutes = 0;
 			    		minutesForSegregation = minutesForSegregation - dto.getMinute();
-			    		time = time == null? new TimeDto(9, 0, "AM") : time;
+			    		time = time == null? new TimeDto(9, 0, Constants.AM) : time;
 			    		dto.setTime(time.clone());
 			    		result.add(dto);
 			    		time.addMinutes(dto.getMinute());
 			    		iter.remove();
 			    		ActivityDto lunchActivity = new ActivityDto();
 			    		lunchActivity.setTime(time.clone());
-			    		lunchActivity.setEvent("Lunch Break");
-			    		lunchActivity.setRange("60min");
+			    		lunchActivity.setEvent(Constants.LUNCH_BREAK);
+			    		lunchActivity.setRange(Constants.SIXTY_MINUTES);
 			    		result.add(lunchActivity);
 			    		time.addMinutes(60);
 			    		totalMinutes = totalMinutes - 180 + temp;
@@ -173,7 +165,7 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			    	
 			    }else {
 			    	int temp = minutesForSegregation - dto.getMinute();
-			    	temp = type.equalsIgnoreCase("type2")?(temp - 60) : temp;
+			    	temp = type.equalsIgnoreCase(Constants.TYPE2)?(temp - 60) : temp;
 			    	if(temp > 0) {
 			    		minutesForSegregation = minutesForSegregation - dto.getMinute();
 			    		totalMinutes = totalMinutes - dto.getMinute();
@@ -197,12 +189,12 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			    }
 			}
 			ActivityDto finalSession = new ActivityDto();
-			finalSession.setEvent("Staff Motivation Presentation");
+			finalSession.setEvent(Constants.FINAL_PRESENTATION);
 			if(time.getHour() >= 4)
 				finalSession.setTime(time.clone());
 			else
-				finalSession.setTime(new TimeDto(4, 0, "PM"));
-			finalSession.setRange("");
+				finalSession.setTime(new TimeDto(4, 0, Constants.PM));
+			finalSession.setRange(Constants.EMPTY_STRING);
 			result.add(finalSession);	
 			teamActivityMap.put(keyCounter++, result);
 		}
@@ -249,7 +241,7 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			index = line.indexOf(minute + "");
 		} else {
 			dto.setMinute(15);
-			index = line.toLowerCase().indexOf("sprint");
+			index = line.toLowerCase().indexOf(Constants.SPRINT);
 			if(index == 0)
 				throw new Exception ("Following Line is invalid \n "+ line +" - Follow pattern: <Activity name>  <Minutes/sprint> ");
 		}
@@ -264,5 +256,5 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 		fos.write(file.getBytes());
 		fos.close();
 		return convFile;
-	}
+	}	
 }
