@@ -104,12 +104,20 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 		type2 = type2 - Math.floor(type2);		
 		String type = null;
 		int typeMinutes = 0;
-		if(type1 > type2)
+		if(type1 == 0.0)
 		{
-			if(type1 < 0.8) {
+			type = "type1";
+			typeMinutes = type1Minutes;
+		}else if(type2 == 0.0) {
+			type = "type2";
+			typeMinutes = type2Minutes;
+		}
+		else if(type1 > type2)
+		{
+			if(type1 < 0.9) {
 				StringBuilder builder = new StringBuilder();
-				builder.append("Remove activities with "+ (type1 * type1Minutes) + "Minutes").append("\n OR");
-				builder.append("Add activities with "+((1-type1) * type1Minutes) + "Minutes");				
+				builder.append("Either remove activities with "+ (int)(type1 * type1Minutes) + "Minutes").append("\n OR ");
+				builder.append("Add activities with "+((int)((1-type1) * type1Minutes)) + "Minutes");				
 				throw new Exception(builder.toString());				
 			}else
 			{
@@ -119,18 +127,19 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 		}else {
 			if(type2 < 0.8) {
 				StringBuilder builder = new StringBuilder();
-				builder.append("Remove activities with "+ (type2 * type1Minutes) + "Minutes").append("\n OR");
-				builder.append("Add activities with "+((1-type2) * type1Minutes) + "Minutes");				
+				builder.append("Either remove activities with "+ (int)(type2 * type1Minutes) + "Minutes").append("\n OR ");
+				builder.append("Add activities with "+((int)((1-type2) * type1Minutes)) + "Minutes");				
 				throw new Exception(builder.toString());
 			}else {
 				type = "type2";
 				typeMinutes = type2Minutes;
 			}
 		}
+		System.out.println(type);
 		int keyCounter = 1;
-		while(totalMinutes > 0 ) {
+		while(totalMinutes > 0 && activities.size()>0) {
 			int minutesForSegregation = typeMinutes;
-			int morningMinutes = 180;			
+			int morningMinutes = 150;			
 			TimeDto time = null;
 			List<ActivityDto> result = new ArrayList<>();
 			ListIterator<ActivityDto> iter = activities.listIterator();			
@@ -162,6 +171,7 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			    		lunchActivity.setRange("60min");
 			    		result.add(lunchActivity);
 			    		time.addMinutes(60);
+			    		totalMinutes = totalMinutes - 180 + temp;
 			    	}
 			    	else {
 			    		iter.remove();
@@ -173,17 +183,20 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			    	temp = type.equalsIgnoreCase("type2")?(temp - 60) : temp;
 			    	if(temp > 0) {
 			    		minutesForSegregation = minutesForSegregation - dto.getMinute();
+			    		totalMinutes = totalMinutes - dto.getMinute();
 			    		dto.setTime(time.clone());
 			    		result.add(dto);
 			    		time.addMinutes(dto.getMinute());
 			    		iter.remove();
 			    	}else if(temp >= -60 && temp <= 0){
-			    		minutesForSegregation = 0;
-			    		totalMinutes = totalMinutes - typeMinutes + temp;
+			    		minutesForSegregation = minutesForSegregation - dto.getMinute();
+			    		totalMinutes = totalMinutes - dto.getMinute();
 			    		dto.setTime(time.clone());
 			    		result.add(dto);
 			    		time.addMinutes(dto.getMinute());
 			    		iter.remove();
+			    	}else if(temp < -60) {
+			    		minutesForSegregation = 0;
 			    	}else {
 			    		iter.remove();
 			    		iter.add(dto);
@@ -192,7 +205,11 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			}
 			ActivityDto finalSession = new ActivityDto();
 			finalSession.setEvent("Staff Motivation Presentation");
-			finalSession.setTime(time.clone());
+			if(time.getHour() >= 4)
+				finalSession.setTime(time.clone());
+			else
+				finalSession.setTime(new TimeDto(4, 0, "PM"));
+			finalSession.setRange("");
 			result.add(finalSession);	
 			teamActivityMap.put(keyCounter++, result);
 		}

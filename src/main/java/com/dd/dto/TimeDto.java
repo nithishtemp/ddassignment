@@ -46,7 +46,7 @@ public class TimeDto implements IDto{
 	}
 	
 	public String toString() {
-		return this.hour + ":" + this.minute + " "+ this.period;		
+		return this.hour + ":" + this.minute + " "+ this.period + " ";		
 	}
 	
 	public void addMinutes(int minute) {
@@ -64,9 +64,10 @@ public class TimeDto implements IDto{
 	}
 	
 	private void updateHour() {
-		if(this.hour > 12) {
-			this.hour = this.hour %12;
+		if(this.hour == 12)
 			this.period = (this.period == "AM")? "PM" : "AM";
+		if(this.hour > 12) {
+			this.hour = this.hour %12;			
 			updateHour();
 		}
 	}
