@@ -5,7 +5,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -67,12 +70,70 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 		File file = null;
 		try {
 			file = convertMultiPartToFile(multipartFile);
-			
+			List<ActivityDto> activities = convertFileToObject(file);
+			long totalMinutes = calculateTotalMinutes(activities);
 		} catch (Exception ex) {
 			throw ex;
 		}
 		return null;
 	}
+	
+	private Map<Integer, List<ActivityDto>> segregateActivitiesIntoTeams(List<ActivityDto> activities, long totalMinutes) throws Exception{
+		Map<Integer, List<ActivityDto>> teamActivityMap = new HashMap<>();
+		int type1Minutes = 360;
+		int type2Minutes = 420;
+		double type1 = totalMinutes/type1Minutes;
+		double type2 = totalMinutes/type2Minutes;
+		type1 = type1 - Math.floor(type1);
+		type2 = type2 - Math.floor(type2);		
+		String type = null;
+		int typeMinutes = 0;
+		if(type1 > type2)
+		{
+			if(type1 < 0.8) {
+				StringBuilder builder = new StringBuilder();
+				builder.append("Remove activities with "+ (type1 * type1Minutes) + "Minutes").append("\n OR");
+				builder.append("Add activities with "+((1-type1) * type1Minutes) + "Minutes");				
+				throw new Exception(builder.toString());				
+			}else
+			{
+				type = "type1";
+				typeMinutes = type1Minutes;
+			}
+		}else {
+			if(type2 < 0.8) {
+				StringBuilder builder = new StringBuilder();
+				builder.append("Remove activities with "+ (type2 * type1Minutes) + "Minutes").append("\n OR");
+				builder.append("Add activities with "+((1-type2) * type1Minutes) + "Minutes");				
+				throw new Exception(builder.toString());
+			}else {
+				type = "type2";
+				typeMinutes = type2Minutes;
+			}
+		}
+		while(totalMinutes > 0 ) {
+			int minutesForSegregation = typeMinutes;
+			boolean morningEventsFlag = false;
+			ListIterator<ActivityDto> iter = activities.listIterator();
+			while(iter.hasNext()){
+			    
+				
+				
+			}
+		}
+	}
+	
+	private boolean validateActivitiesList() {
+		//todo
+	}
+	
+	private long calculateTotalMinutes(List<ActivityDto> activities) {		
+		long totalMinutes = 0;
+		for(ActivityDto activity: activities) {
+			totalMinutes += activity.getMinute();
+		}
+		return totalMinutes;
+	}	
 	
 	private List<ActivityDto> convertFileToObject(File file) throws FileNotFoundException{
 		List<ActivityDto> activities = new ArrayList<>();
