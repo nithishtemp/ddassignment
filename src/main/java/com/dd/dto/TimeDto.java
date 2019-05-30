@@ -11,6 +11,10 @@ public class TimeDto implements IDto{
 	private int minute;
 	private String period;
 	
+	public TimeDto() {
+		
+	}
+	
 	public TimeDto(int hour, int minute, String period) {
 		this.hour = hour;
 		this.minute = minute;		
@@ -47,7 +51,7 @@ public class TimeDto implements IDto{
 	
 	public void addMinutes(int minute) {
 		this.minute = this.minute + minute;		
-		this.updateMinute();
+		this.updateMinute();		
 		this.updateHour();
 	}
 	
@@ -65,5 +69,13 @@ public class TimeDto implements IDto{
 			this.period = (this.period == "AM")? "PM" : "AM";
 			updateHour();
 		}
+	}
+	
+	public TimeDto clone() {
+		TimeDto clone = new TimeDto();
+		clone.setHour(this.getHour());
+		clone.setMinute(this.getMinute());
+		clone.setPeriod(this.getPeriod());
+		return clone;
 	}
 }

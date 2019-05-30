@@ -143,7 +143,7 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			    		morningMinutes = temp;
 			    		minutesForSegregation = minutesForSegregation - dto.getMinute();
 			    		time = time == null? new TimeDto(9, 0, "AM") : time;
-			    		dto.setTime(time);
+			    		dto.setTime(time.clone());
 			    		result.add(dto);
 			    		time.addMinutes(dto.getMinute());
 			    		iter.remove();
@@ -152,12 +152,12 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			    		morningMinutes = 0;
 			    		minutesForSegregation = minutesForSegregation - dto.getMinute();
 			    		time = time == null? new TimeDto(9, 0, "AM") : time;
-			    		dto.setTime(time);
+			    		dto.setTime(time.clone());
 			    		result.add(dto);
 			    		time.addMinutes(dto.getMinute());
 			    		iter.remove();
 			    		ActivityDto lunchActivity = new ActivityDto();
-			    		lunchActivity.setTime(time);
+			    		lunchActivity.setTime(time.clone());
 			    		lunchActivity.setEvent("Lunch Break");
 			    		lunchActivity.setRange("60min");
 			    		result.add(lunchActivity);
@@ -173,14 +173,14 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			    	temp = type.equalsIgnoreCase("type2")?(temp - 60) : temp;
 			    	if(temp > 0) {
 			    		minutesForSegregation = minutesForSegregation - dto.getMinute();
-			    		dto.setTime(time);
+			    		dto.setTime(time.clone());
 			    		result.add(dto);
 			    		time.addMinutes(dto.getMinute());
 			    		iter.remove();
 			    	}else if(temp >= -60 && temp <= 0){
 			    		minutesForSegregation = 0;
 			    		totalMinutes = totalMinutes - typeMinutes + temp;
-			    		dto.setTime(time);
+			    		dto.setTime(time.clone());
 			    		result.add(dto);
 			    		time.addMinutes(dto.getMinute());
 			    		iter.remove();
@@ -192,7 +192,7 @@ public class ActivitiesOrganizeService implements ICommonService<ActivityDto, Ac
 			}
 			ActivityDto finalSession = new ActivityDto();
 			finalSession.setEvent("Staff Motivation Presentation");
-			finalSession.setTime(time);
+			finalSession.setTime(time.clone());
 			result.add(finalSession);	
 			teamActivityMap.put(keyCounter++, result);
 		}
