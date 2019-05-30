@@ -3,6 +3,7 @@ package com.dd.util;
 public class Constants {
 
 	public static final String ACTIVITY = "/activity";
+	public static final String ACTIVITY_BY_ID = "/activity/{activity_id}";
 	public static final String ACTIVITY_ORGANIZE = "/activity-organize";
 	public static final String TYPE1 = "type1";
 	public static final String TYPE2 = "type2";
