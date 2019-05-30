@@ -6,8 +6,10 @@ public class ActivityDto implements IDto {
 	 */
 	private static final long serialVersionUID = 1L;
 	private String event;
+	private Long activityId;
 	private TimeDto time;
 	private String range;
+	private int minute;
 	public String getEvent() {
 		return event;
 	}
@@ -25,5 +27,17 @@ public class ActivityDto implements IDto {
 	}
 	public void setRange(String range) {
 		this.range = range;
+	}
+	public Long getActivityId() {
+		return activityId;
+	}
+	public void setActivityId(Long activityId) {
+		this.activityId = activityId;
+	}
+	public int getMinute() {
+		return minute;
+	}
+	public void setMinute(int minute) {
+		this.minute = minute;
 	}
 }
