@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -21,7 +20,9 @@ import org.springframework.web.multipart.MultipartFile;
 import com.dd.dto.ActivityDto;
 import com.dd.dto.TimeDto;
 import com.dd.entity.Activity;
+import com.dd.entity.Team;
 import com.dd.repository.ActivityRepository;
+import com.dd.repository.TeamRepository;
 import com.dd.util.Constants;
 
 @Component
@@ -30,6 +31,9 @@ public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto
 	@Resource
 	private ActivityRepository repository;
 	
+	@Resource
+	private TeamRepository teamRepository;
+	
 	@Override
 	public JpaRepository<Activity, Long> getJPARepository() {
 		return repository;
@@ -37,26 +41,52 @@ public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto
 	
 	@Override
 	public Activity convertDtoToEntity(ActivityDto dto) {
-		// TODO Auto-generated method stub
-		return null;
+		Activity entity = new Activity();
+		if(dto != null) {
+			entity.setEvent(dto.getEvent());
+			entity.setPeriod(dto.getRange());
+			entity.setTime(dto.getTime() == null? null: dto.getTime().toString());
+			if(dto.getTeamId()>0)
+			{
+				entity.setTeam(teamRepository.findOne(dto.getTeamId()));
+			}
+		}
+		return entity;
 	}
 
 	@Override
 	public List<Activity> convertDtosToEntities(List<ActivityDto> dtoList) {
-		// TODO Auto-generated method stub
-		return null;
+		List<Activity> entities = new ArrayList<>();
+		if(dtoList != null && dtoList.size() > 0) {
+			for(ActivityDto dto: dtoList) {
+				entities.add(convertDtoToEntity(dto));
+			}
+		}
+		return entities;
 	}
 
 	@Override
 	public ActivityDto convertEntityToDto(Activity entity) {
-		// TODO Auto-generated method stub
-		return null;
+		ActivityDto dto = new ActivityDto();
+		if(entity != null) {
+			dto.setEvent(entity.getEvent());
+			dto.setRange(entity.getPeriod());
+			dto.setTimeString(entity.getTime());
+			if(entity.getTeam() != null)
+				dto.setTeamId(entity.getTeam().getTeamId());
+		}
+		return dto;
 	}
 
 	@Override
 	public List<ActivityDto> convertEntitiesToDtos(List<Activity> entities) {
-		// TODO Auto-generated method stub
-		return null;
+		List<ActivityDto> dtos = new ArrayList<>();
+		if(dtos != null && dtos.size() > 0) {
+			for(Activity entity : entities) {
+				dtos.add(convertEntityToDto(entity));
+			}
+		}
+		return dtos;
 	}
 
 	public String organizeActivity(MultipartFile multipartFile) throws Exception {
@@ -69,9 +99,18 @@ public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto
 			Map<Integer, List<ActivityDto>> result = this.segregateActivitiesIntoTeams(activities, totalMinutes);
 			
 			for(Map.Entry<Integer, List<ActivityDto>> entry : result.entrySet()) {
+				Team team = new Team();
+				team.setTeamName("Team"+ entry.getKey());
+				teamRepository.saveAndFlush(team);
 				builder.append("Team: " + entry.getKey()).append(Constants.NEWLINE);
 				for(ActivityDto dt : entry.getValue()) {
 					builder.append(dt.getTime() + dt.getEvent()+dt.getRange()).append(Constants.NEWLINE);
+					Activity activity = new Activity();
+					activity.setEvent(dt.getEvent());
+					activity.setPeriod(dt.getRange());
+					activity.setTime(dt.getTime()==null? null : dt.getTime().toString());
+					activity.setTeam(team);
+					repository.saveAndFlush(activity);
 				}
 			}
 		} catch (Exception ex) {
@@ -79,6 +118,31 @@ public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto
 		}
 		return builder.toString();
 	}
+	
+	/*public static void main(String arg[]) {
+		List<Integer> values = new ArrayList<>();
+		values.add(1);
+		values.add(2);
+		values.add(3);
+		values.add(4);
+		values.add(5);
+		values.add(6);
+		int counter = 1;
+		int i = 0;
+		while (i< values.size()) {
+			int temp = values.get(i);
+			if(counter == 2) {
+				values.remove(i);
+				values.add(temp);
+				counter++;
+				//i++;
+				continue;
+			}
+			counter++;			
+			System.out.println(values.get(i));
+			i++;
+		}
+	}*/
 	
 	private Map<Integer, List<ActivityDto>> segregateActivitiesIntoTeams(List<ActivityDto> activities, long totalMinutes) throws Exception{
 		Map<Integer, List<ActivityDto>> teamActivityMap = new HashMap<>();
@@ -102,8 +166,15 @@ public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto
 		{
 			if(type1 < 0.9) {
 				StringBuilder builder = new StringBuilder();
-				builder.append("Either remove activities with "+ (int)(type1 * type1Minutes) + Constants.MINUTES).append("\n OR ");
-				builder.append("Add activities with "+((int)((1-type1) * type1Minutes)) + Constants.MINUTES);				
+				if((int)(type1 * type1Minutes) < (int)(type2 * type2Minutes))
+					builder.append("Either remove activities with "+ (int)(type1 * type1Minutes) + Constants.MINUTES).append(" OR ");
+				else
+					builder.append("Either remove activities with "+ (int)(type2 * type2Minutes) + Constants.MINUTES).append(" OR ");
+				
+				if((int)((1-type1) * type1Minutes) < (int)((1-type2) * type2Minutes))
+					builder.append("Add activities with "+((int)((1-type1) * type1Minutes)) + Constants.MINUTES).append(" OR ");
+				else
+					builder.append("Add activities with "+((int)((1-type2) * type2Minutes)) + Constants.MINUTES).append(" OR ");
 				throw new Exception(builder.toString());				
 			}else
 			{
@@ -113,8 +184,15 @@ public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto
 		}else {
 			if(type2 < 0.8) {
 				StringBuilder builder = new StringBuilder();
-				builder.append("Either remove activities with "+ (int)(type2 * type1Minutes) + Constants.MINUTES).append("\n OR ");
-				builder.append("Add activities with "+((int)((1-type2) * type1Minutes)) + Constants.MINUTES);				
+				if((int)(type1 * type1Minutes) < (int)(type2 * type2Minutes))
+					builder.append("Either remove activities with "+ (int)(type1 * type1Minutes) + Constants.MINUTES).append(" OR ");
+				else
+					builder.append("Either remove activities with "+ (int)(type2 * type2Minutes) + Constants.MINUTES).append(" OR ");
+				
+				if((int)((1-type1) * type1Minutes) < (int)((1-type2) * type2Minutes))
+					builder.append("Add activities with "+((int)((1-type1) * type1Minutes)) + Constants.MINUTES).append(" OR ");
+				else
+					builder.append("Add activities with "+((int)((1-type2) * type2Minutes)) + Constants.MINUTES).append(" OR ");				
 				throw new Exception(builder.toString());
 			}else {
 				type = Constants.TYPE2;
@@ -127,9 +205,10 @@ public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto
 			int morningMinutes = 150;			
 			TimeDto time = null;
 			List<ActivityDto> result = new ArrayList<>();
-			ListIterator<ActivityDto> iter = activities.listIterator();			
-			while(iter.hasNext() && minutesForSegregation > 0){
-				ActivityDto dto = iter.next();
+			//ListIterator<ActivityDto> iter = activities.listIterator();	
+			int i = 0;
+			while(i<activities.size() && minutesForSegregation > 0){
+				ActivityDto dto = activities.get(i);
 			    if(morningMinutes > 0) {
 			    	int temp = morningMinutes - dto.getMinute();
 			    	if(temp > 0)
@@ -140,7 +219,7 @@ public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto
 			    		dto.setTime(time.clone());
 			    		result.add(dto);
 			    		time.addMinutes(dto.getMinute());
-			    		iter.remove();
+			    		activities.remove(i);			    		
 			    	}
 			    	else if(temp >= -30 && temp <= 0) {
 			    		morningMinutes = 0;
@@ -149,7 +228,7 @@ public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto
 			    		dto.setTime(time.clone());
 			    		result.add(dto);
 			    		time.addMinutes(dto.getMinute());
-			    		iter.remove();
+			    		activities.remove(i);
 			    		ActivityDto lunchActivity = new ActivityDto();
 			    		lunchActivity.setTime(time.clone());
 			    		lunchActivity.setEvent(Constants.LUNCH_BREAK);
@@ -159,8 +238,8 @@ public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto
 			    		totalMinutes = totalMinutes - 180 + temp;
 			    	}
 			    	else {
-			    		iter.remove();
-			    		iter.add(dto);
+			    		activities.remove(i);
+			    		activities.add(dto);
 			    	}
 			    	
 			    }else {
@@ -172,19 +251,19 @@ public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto
 			    		dto.setTime(time.clone());
 			    		result.add(dto);
 			    		time.addMinutes(dto.getMinute());
-			    		iter.remove();
+			    		activities.remove(i);
 			    	}else if(temp >= -60 && temp <= 0){
 			    		minutesForSegregation = minutesForSegregation - dto.getMinute();
 			    		totalMinutes = totalMinutes - dto.getMinute();
 			    		dto.setTime(time.clone());
 			    		result.add(dto);
 			    		time.addMinutes(dto.getMinute());
-			    		iter.remove();
+			    		activities.remove(i);
 			    	}else if(temp < -60) {
-			    		minutesForSegregation = 0;
+			    		minutesForSegregation = 0;			    		
 			    	}else {
-			    		iter.remove();
-			    		iter.add(dto);
+			    		activities.remove(i);
+			    		activities.add(dto);
 			    	}
 			    }
 			}

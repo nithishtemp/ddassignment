@@ -10,6 +10,8 @@ public class ActivityDto implements IDto {
 	private TimeDto time;
 	private String range;
 	private int minute;
+	private long teamId;
+	private String timeString;
 	public String getEvent() {
 		return event;
 	}
@@ -39,5 +41,17 @@ public class ActivityDto implements IDto {
 	}
 	public void setMinute(int minute) {
 		this.minute = minute;
+	}
+	public long getTeamId() {
+		return teamId;
+	}
+	public void setTeamId(long teamId) {
+		this.teamId = teamId;
+	}
+	public String getTimeString() {
+		return timeString;
+	}
+	public void setTimeString(String timeString) {
+		this.timeString = timeString;
 	}
 }
