@@ -328,6 +328,12 @@ public class ActivitiesOrganizeService extends CommonBaseServiceImpl<ActivityDto
 		return totalMinutes;
 	}
 
+	/**
+	 * This method converts the input file to objectss
+	 * @param file
+	 * @return
+	 * @throws FileNotFoundException
+	 */
 	private List<ActivityDto> convertFileToObject(File file) throws FileNotFoundException {
 		logger.debug("ActivitiesOrganizeService - convertFileToObject : start");
 		List<ActivityDto> activities = new ArrayList<>();
